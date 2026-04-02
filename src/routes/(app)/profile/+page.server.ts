@@ -5,15 +5,11 @@ import { profileSchema, switchLanguageSchema } from '$lib/schemas';
 import { db } from '$lib/server/db';
 import { userLearningProfile } from '$lib/server/db/schema';
 
-export const load: PageServerLoad = async (event) => {
-	return { user: event.locals.user! };
-};
-
 export const actions: Actions = {
 	updateProfile: async (event) => {
 		const formData = await event.request.formData();
 		const raw = {
-			nickname: formData.get('nickname')?.toString() ?? undefined,
+			name: formData.get('name')?.toString() ?? undefined,
 			timezone: formData.get('timezone')?.toString() ?? undefined,
 			nativeLanguage: formData.get('nativeLanguage')?.toString() ?? undefined
 		};

@@ -9,9 +9,10 @@
 	let { form, data } = $props();
 
 	const languages = [
-		{ value: 'en', label: 'English' },
-		{ value: 'es', label: 'Spanish' },
-		{ value: 'fr', label: 'French' }
+		{ value: "en", label: "English" },
+		{ value: "es", label: "Español" },
+		{ value: "fr", label: "Français" },
+		{ value: "ja", label: "日本語" },
 	];
 </script>
 
@@ -23,20 +24,62 @@
 	{/if}
 
 	<Card.Root>
+		<Card.Content class="pt-6">
+			<div class="flex items-center gap-6">
+				<img
+					src={data.avatarUrl}
+					alt="User Avatar"
+					class="h-24 w-24 rounded-full border border-gray-200 object-cover shadow-sm"
+				/>
+				<div class="space-y-1">
+					<h2 class="text-xl font-semibold">
+						{data.user.name}
+					</h2>
+					<p class="text-sm text-muted-foreground">
+						Your avatar is connected to your email via
+						<a
+							href="https://cravatar.cn"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="text-primary hover:underline font-medium"
+						>
+							Cravatar
+						</a>.
+					</p>
+					<p class="text-xs text-muted-foreground">
+						Want a custom image? Upload it at Gravatar/Cravatar and it will
+						sync here automatically!
+					</p>
+				</div>
+			</div>
+		</Card.Content>
+	</Card.Root>
+
+	<Card.Root>
 		<Card.Header>
 			<Card.Title>Settings</Card.Title>
 		</Card.Header>
 		<Card.Content>
-			<form method="POST" action="?/updateProfile" use:enhance class="space-y-4">
+			<form
+				method="POST"
+				action="?/updateProfile"
+				use:enhance={() => {
+					// Prevent default form reset on success to keep input values
+					return async ({ update }) => {
+						await update({ reset: false });
+					};
+				}}
+				class="space-y-4"
+			>
 				<div class="space-y-2">
-					<Label for="nickname">Nickname</Label>
+					<Label for="name">Name</Label>
 					<Input
-						id="nickname"
-						name="nickname"
-						value={form?.values?.nickname ?? data.user.nickname ?? ''}
+						id="name"
+						name="name"
+						value={form?.values?.name ?? data.user.name ?? ''}
 					/>
-					{#if form?.errors?.nickname}
-						<p class="text-sm text-red-600">{form.errors.nickname[0]}</p>
+					{#if form?.errors?.name}
+						<p class="text-sm text-red-600">{form.errors.name[0]}</p>
 					{/if}
 				</div>
 
