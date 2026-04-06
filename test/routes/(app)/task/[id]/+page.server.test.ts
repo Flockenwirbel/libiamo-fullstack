@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { load } from "../../../../../src/routes/(app)/task/[id]/+page.server";
 
-const { mockLimit, mockWhere, mockInnerJoin, mockFrom, mockSelect } = vi.hoisted(() => {
+const { mockLimit, mockSelect } = vi.hoisted(() => {
 	const mockLimit = vi.fn();
 	const mockWhere = vi.fn(() => ({ limit: mockLimit }));
 	const mockInnerJoin = vi.fn(() => ({ where: mockWhere }));
 	const mockFrom = vi.fn(() => ({ innerJoin: mockInnerJoin }));
 	const mockSelect = vi.fn(() => ({ from: mockFrom }));
-	return { mockLimit, mockWhere, mockInnerJoin, mockFrom, mockSelect };
+	return { mockLimit, mockSelect };
 });
 
 vi.mock("$lib/server/db", () => ({
@@ -22,35 +22,26 @@ describe("Task detail +page.server", () => {
 	});
 
 	it("redirects when user is not authenticated", async () => {
-		try {
-			await load({ locals: { user: null }, params: { id: "1" } } as any);
-			expect.fail("Should have thrown a redirect");
-		} catch (error: any) {
-			expect(error.status).toBe(302);
-			expect(error.location).toBe("/sign-in");
-		}
+		await expect(load({ locals: { user: null }, params: { id: "1" } } as any)).rejects.toMatchObject({
+			status: 302,
+			location: "/sign-in",
+		});
 	});
 
 	it("returns 404 when task id is invalid", async () => {
-		try {
-			await load({ locals: { user: { activeLanguage: "en" } }, params: { id: "abc" } } as any);
-			expect.fail("Should have thrown an error");
-		} catch (error: any) {
-			expect(error.status).toBe(404);
-			expect(error.body.message).toBe("Task not found");
-		}
+		await expect(load({ locals: { user: { activeLanguage: "en" } }, params: { id: "abc" } } as any)).rejects.toMatchObject({
+			status: 404,
+			body: { message: "Task not found" },
+		});
 	});
 
 	it("returns 404 when task query is empty", async () => {
 		mockLimit.mockResolvedValueOnce([]);
 
-		try {
-			await load({ locals: { user: { activeLanguage: "en" } }, params: { id: "42" } } as any);
-			expect.fail("Should have thrown an error");
-		} catch (error: any) {
-			expect(error.status).toBe(404);
-			expect(error.body.message).toBe("Task not found");
-		}
+		await expect(load({ locals: { user: { activeLanguage: "en" } }, params: { id: "42" } } as any)).rejects.toMatchObject({
+			status: 404,
+			body: { message: "Task not found" },
+		});
 	});
 
 	it("returns task payload when found", async () => {

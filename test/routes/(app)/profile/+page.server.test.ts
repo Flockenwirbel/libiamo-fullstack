@@ -91,13 +91,7 @@ describe("Profile +page.server actions", () => {
 	it("signOut calls auth api and redirects", async () => {
 		const event = createActionEvent({});
 
-		try {
-			await actions.signOut(event);
-			expect.fail("Should have thrown a redirect");
-		} catch (error: any) {
-			expect(error.status).toBe(302);
-			expect(error.location).toBe("/sign-in");
-		}
+		await expect(actions.signOut(event)).rejects.toMatchObject({ status: 302, location: "/sign-in" });
 
 		expect(auth.api.signOut).toHaveBeenCalledWith({ headers: event.request.headers });
 	});

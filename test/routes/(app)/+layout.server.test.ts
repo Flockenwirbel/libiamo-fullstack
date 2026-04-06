@@ -6,13 +6,10 @@ const EMPTY_MD5 = "d41d8cd98f00b204e9800998ecf8427e";
 
 describe("(app) layout +layout.server", () => {
 	it("redirects to sign-in when user is missing", async () => {
-		try {
-			await load({ locals: { user: null } } as any);
-			expect.fail("Should have thrown a redirect");
-		} catch (error: any) {
-			expect(error.status).toBe(302);
-			expect(error.location).toBe("/sign-in");
-		}
+		await expect(load({ locals: { user: null } } as any)).rejects.toMatchObject({
+			status: 302,
+			location: "/sign-in",
+		});
 	});
 
 	it("returns user and cravatar url when user exists", async () => {

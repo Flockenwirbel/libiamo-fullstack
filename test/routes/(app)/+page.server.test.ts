@@ -67,13 +67,10 @@ describe("(app) home +page.server", () => {
 	});
 
 	it("redirects unauthenticated users", async () => {
-		try {
-			await load({ locals: { user: null } } as any);
-			expect.fail("Should have thrown a redirect");
-		} catch (error: any) {
-			expect(error.status).toBe(302);
-			expect(error.location).toBe("/sign-in");
-		}
+		await expect(load({ locals: { user: null } } as any)).rejects.toMatchObject({
+			status: 302,
+			location: "/sign-in",
+		});
 	});
 
 	it("loads weekly and daily tasks for active language", async () => {
