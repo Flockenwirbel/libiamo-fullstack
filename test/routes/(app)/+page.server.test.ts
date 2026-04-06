@@ -1,9 +1,9 @@
-import type { ActionFailure } from "@sveltejs/kit";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { auth } from "$lib/server/auth";
 import { actions, load } from "../../../src/routes/(app)/+page.server";
+import { runSwitchLanguageActionSuite } from "./action-test-helpers";
 
-const { mockWhere, mockInnerJoin, mockFrom, mockSelect, mockOnConflictDoNothing, mockValues, mockInsert } = vi.hoisted(() => {
+const { mockWhere, mockSelect, mockOnConflictDoNothing, mockValues, mockInsert } = vi.hoisted(() => {
 	const mockWhere = vi.fn();
 	const mockInnerJoin = vi.fn(() => ({ where: mockWhere }));
 	const mockFrom = vi.fn(() => ({ innerJoin: mockInnerJoin }));
@@ -93,60 +93,12 @@ describe("(app) home +page.server", () => {
 		});
 	});
 
-	describe("switchLanguage action", () => {
-		const createEvent = (entries: Record<string, string>, userId = "u1") => {
-			const formData = new FormData();
-			for (const [key, value] of Object.entries(entries)) {
-				formData.append(key, value);
-			}
-
-			return {
-				locals: { user: userId ? { id: userId } : null },
-				request: {
-					formData: async () => formData,
-					headers: new Headers(),
-				},
-			} as any;
-		};
-
-		it("returns 400 for invalid language", async () => {
-			const result = (await actions.switchLanguage(createEvent({ language: "de" }))) as ActionFailure<any>;
-
-			expect(result.status).toBe(400);
-			expect(result.data?.message).toBe("Invalid language");
-			expect(auth.api.updateUser).not.toHaveBeenCalled();
-		});
-
-		it("returns 400 when language field is missing", async () => {
-			const result = (await actions.switchLanguage(createEvent({}))) as ActionFailure<any>;
-
-			expect(result.status).toBe(400);
-			expect(result.data?.message).toBe("Invalid language");
-		});
-
-		it("returns 401 when user id is missing", async () => {
-			const result = (await actions.switchLanguage(createEvent({ language: "fr" }, ""))) as ActionFailure<any>;
-			expect(result.status).toBe(401);
-		});
-
-		it("updates language, ensures profile, and redirects", async () => {
-			const event = createEvent({ language: "ja" }, "user-1");
-
-			try {
-				await actions.switchLanguage(event);
-				expect.fail("Should have thrown a redirect");
-			} catch (error: any) {
-				expect(error.status).toBe(302);
-				expect(error.location).toBe("/");
-			}
-
-			expect(auth.api.updateUser).toHaveBeenCalledWith({
-				body: { activeLanguage: "ja" },
-				headers: event.request.headers,
-			});
-			expect(mockInsert).toHaveBeenCalled();
-			expect(mockValues).toHaveBeenCalledWith({ userId: "user-1", language: "ja" });
-			expect(mockOnConflictDoNothing).toHaveBeenCalled();
-		});
+	runSwitchLanguageActionSuite({
+		action: actions.switchLanguage,
+		updateUser: auth.api.updateUser as any,
+		mockInsert,
+		mockValues,
+		mockOnConflictDoNothing,
+		successLanguage: "ja",
 	});
 });

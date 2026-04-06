@@ -2,6 +2,7 @@ import type { ActionFailure } from "@sveltejs/kit";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { auth } from "$lib/server/auth";
 import { actions } from "../../../../src/routes/(app)/profile/+page.server";
+import { createActionEvent, runSwitchLanguageActionSuite } from "../action-test-helpers";
 
 const { mockOnConflictDoNothing, mockValues, mockInsert } = vi.hoisted(() => {
 	const mockOnConflictDoNothing = vi.fn();
@@ -34,24 +35,9 @@ describe("Profile +page.server actions", () => {
 		vi.clearAllMocks();
 	});
 
-	const createEvent = (entries: Record<string, string>, userId = "u1") => {
-		const formData = new FormData();
-		for (const [key, value] of Object.entries(entries)) {
-			formData.append(key, value);
-		}
-
-		return {
-			locals: { user: userId ? { id: userId } : null },
-			request: {
-				formData: async () => formData,
-				headers: new Headers(),
-			},
-		} as any;
-	};
-
 	it("updateProfile returns 400 for invalid payload", async () => {
 		const result = (await actions.updateProfile(
-			createEvent({
+			createActionEvent({
 				name: "x".repeat(60),
 			}),
 		)) as ActionFailure<any>;
@@ -62,7 +48,7 @@ describe("Profile +page.server actions", () => {
 	});
 
 	it("updateProfile handles missing optional fields", async () => {
-		const event = createEvent({});
+		const event = createActionEvent({});
 
 		const result = await actions.updateProfile(event);
 
@@ -74,7 +60,7 @@ describe("Profile +page.server actions", () => {
 	});
 
 	it("updateProfile calls auth update and returns success", async () => {
-		const event = createEvent({
+		const event = createActionEvent({
 			name: "Alice",
 			timezone: "Asia/Shanghai",
 			nativeLanguage: "zh",
@@ -93,56 +79,17 @@ describe("Profile +page.server actions", () => {
 		expect(result).toEqual({ success: true });
 	});
 
-	it("switchLanguage returns 400 for invalid language", async () => {
-		const result = (await actions.switchLanguage(
-			createEvent({
-				language: "de",
-			}),
-		)) as ActionFailure<any>;
-
-		expect(result.status).toBe(400);
-		expect(result.data?.message).toBe("Invalid language");
-		expect(auth.api.updateUser).not.toHaveBeenCalled();
-	});
-
-	it("switchLanguage returns 400 when language field is missing", async () => {
-		const result = (await actions.switchLanguage(createEvent({}))) as ActionFailure<any>;
-
-		expect(result.status).toBe(400);
-		expect(result.data?.message).toBe("Invalid language");
-	});
-
-	it("switchLanguage returns 401 when user missing", async () => {
-		const event = createEvent({ language: "en" }, "");
-		const result = (await actions.switchLanguage(event)) as ActionFailure<any>;
-		expect(result.status).toBe(401);
-	});
-
-	it("switchLanguage updates language, ensures profile, and redirects", async () => {
-		const event = createEvent({ language: "fr" }, "user-1");
-
-		try {
-			await actions.switchLanguage(event);
-			expect.fail("Should have thrown a redirect");
-		} catch (error: any) {
-			expect(error.status).toBe(302);
-			expect(error.location).toBe("/");
-		}
-
-		expect(auth.api.updateUser).toHaveBeenCalledWith({
-			body: { activeLanguage: "fr" },
-			headers: event.request.headers,
-		});
-		expect(mockInsert).toHaveBeenCalled();
-		expect(mockValues).toHaveBeenCalledWith({
-			userId: "user-1",
-			language: "fr",
-		});
-		expect(mockOnConflictDoNothing).toHaveBeenCalled();
+	runSwitchLanguageActionSuite({
+		action: actions.switchLanguage,
+		updateUser: auth.api.updateUser as any,
+		mockInsert,
+		mockValues,
+		mockOnConflictDoNothing,
+		successLanguage: "fr",
 	});
 
 	it("signOut calls auth api and redirects", async () => {
-		const event = createEvent({});
+		const event = createActionEvent({});
 
 		try {
 			await actions.signOut(event);
