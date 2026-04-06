@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
 	mockInsertTaskConflict,
@@ -112,6 +112,10 @@ describe("tasks helpers", () => {
 		vi.clearAllMocks();
 		countResultsQueue.length = 0;
 		templateResultsQueue.length = 0;
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
 	});
 
 	it("getMondayOfWeek returns monday for a sunday date", () => {
